@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+    mongodb:
+        image: mongo:6
+        container_name: mongodb_container
+        ports:
+            - '127.0.0.1:27019:27017'
+        volumes:
+            - mongodb_data_env:/data/db
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: 'root'
+            MONGO_INITDB_ROOT_PASSWORD: 'Admin@_1234'
+            MONGO_INITDB_DATABASE: nestgql
+        deploy:
+            resources:
+                limits:
+                    memory: 4GB
+                reservations:
+                    memory: 2GB
+        networks:
+            - app-network
+
+    nestjs-app:
+        build: .
+        container_name: nestjs_container
+        restart: always
+        depends_on:
+            - mongodb
+        ports:
+            - '8002:8002'
+        environment:
+            DATABASE_URL: mongodb://root:Admin@_1234@mongodb_container:27017/nestgql?directConnection=true&authSource=admin&retryWrites=true
+            PORT: 8002
+        env_file:
+            - .env.development
+        volumes:
+            - .:/usr/src/app 
+            - /usr/src/app/node_modules 
+        command: [ 'npm', 'run', 'start:dev' ]
+        deploy:
+            resources:
+                limits:
+                    memory: 2GB
+                reservations:
+                    memory: 1GB
+        networks:
+            - app-network
+
+volumes:
+    mongodb_data_env:
+
+
+networks:
+    app-network:
+        driver: bridge
